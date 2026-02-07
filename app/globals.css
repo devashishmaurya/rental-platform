@@ -1,0 +1,43 @@
+/* Design tokens & variables (single source of truth) */
+@import './styles/variables.css';
+
+/* Helper / utility classes */
+@import './styles/helpers.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply text-gray-900 bg-white font-sans text-base font-normal antialiased;
+  }
+}
+
+@layer components {
+  .container {
+    @apply max-w-7xl mx-auto;
+  }
+
+  /* Hero section dimensions (width 1560px, height 400px reference) */
+  .hero {
+    min-height: var(--hero-min-height);
+  }
+
+  .hero__image {
+    width: 100%;
+    max-width: var(--hero-width);
+    height: var(--hero-height);
+    min-height: var(--hero-min-height);
+    object-fit: cover;
+    object-position: center;
+  }
+}

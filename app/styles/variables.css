@@ -1,0 +1,48 @@
+/**
+ * Design tokens & CSS custom properties
+ * Single source of truth for layout, typography, and theme.
+ * Use these in components and Tailwind (via theme.extend) where possible.
+ */
+
+:root {
+  /* ----- Hero ----- */
+  --hero-width: 1560px;
+  --hero-height: 400px;
+  --hero-min-height: 280px;
+  --hero-aspect-ratio: 3.9; /* width / height ≈ 1560/400 */
+
+  /* ----- Layout ----- */
+  --container-max: 80rem; /* 1280px, aligns with max-w-7xl */
+  --header-height: 4rem; /* 64px */
+  --section-padding-y: 4rem;
+  --section-padding-y-md: 5rem;
+
+  /* ----- Typography ----- */
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --text-hero-title: 2.5rem;
+  --text-hero-lead: 1.25rem;
+  --text-section-title: 1.875rem;
+  --leading-tight: 1.15;
+  --leading-normal: 1.5;
+
+  /* ----- Colors (optional override / semantic) ----- */
+  --color-primary-950: #0a3d5c;
+  --color-primary-600: #0284c7;
+  --color-accent-green: #10b981;
+  --color-accent-green-hover: #059669;
+
+  /* ----- Spacing ----- */
+  --space-section: 1.5rem;
+  --space-section-md: 2rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+}
+
+/* Dark / future theme overrides (optional) */
+@media (prefers-color-scheme: dark) {
+  /* Uncomment when supporting dark mode
+  :root {
+    --color-primary-950: #0c4a6e;
+  }
+  */
+}

@@ -1,0 +1,7 @@
+# Public Assets Directory
+
+Place static assets here:
+- images/
+- favicon.ico
+- og-image.jpg (for OpenGraph)
+- logo.png
