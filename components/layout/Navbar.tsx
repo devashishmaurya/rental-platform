@@ -164,7 +164,11 @@ export default function Navbar() {
   const { isAuthenticated, isLoading, login, logout, isKeycloakEnabled } = useKeycloak()
 
   return (
-    <nav className="bg-primary-950 text-white sticky top-0 z-50" style={{ backgroundColor: '#0a3d5c' }}>
+    <nav
+      className="bg-primary-950 text-white sticky top-0 z-50 w-full"
+      style={{ backgroundColor: '#0a3d5c' }}
+      aria-label="Main navigation"
+    >
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -228,7 +232,7 @@ export default function Navbar() {
                   onClick={login}
                   className="text-sm font-medium text-white/90 hover:text-white transition-colors"
                 >
-                  Sign In
+                  Sign in
                 </button>
               )
             ) : (
@@ -239,7 +243,7 @@ export default function Navbar() {
                 disabled
                 title="Keycloak not configured"
               >
-                Sign In
+                Sign in
               </button>
             )}
 

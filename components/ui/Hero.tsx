@@ -29,14 +29,21 @@ export default function Hero({ content, className = '' }: HeroProps) {
       style={{ backgroundColor: 'var(--color-primary-950, #0a3d5c)' }}
     >
       {heroImage && (
-        <img
-          src={heroImage}
-          alt=""
-          className="hero__image absolute inset-0 w-full h-full object-cover object-center pointer-events-none opacity-50"
-          width={1560}
-          height={400}
-          fetchPriority="high"
-        />
+        <>
+          <img
+            src={heroImage}
+            alt=""
+            className="hero__image absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
+            width={1560}
+            height={400}
+            fetchPriority="high"
+          />
+          {/* Subtle dark overlay per Figma - enhances readability of white text */}
+          <div
+            className="absolute inset-0 bg-primary-950/40 pointer-events-none"
+            aria-hidden
+          />
+        </>
       )}
       <div className="container relative z-10 mx-auto px-4 py-12 md:py-20">
         <div className="max-w-5xl mx-auto">
@@ -83,12 +90,12 @@ export default function Hero({ content, className = '' }: HeroProps) {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={content.searchPlaceholder}
-                    className="w-full pl-12 pr-4 py-4 rounded-lg text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-primary-400"
+                    className="w-full pl-12 pr-4 py-4 rounded-lg text-gray-900 text-lg bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors whitespace-nowrap"
+                  className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors whitespace-nowrap border-0"
                 >
                   {content.searchButtonText || 'Search'}
                 </button>

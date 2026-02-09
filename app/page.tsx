@@ -22,8 +22,11 @@ export default function HomePage() {
     <>
       {content.hero && <Hero content={content.hero} />}
 
-      {/* Stats / social proof strip */}
-      <section className="py-6 bg-primary-950 text-white text-center">
+      {/* Stats / social proof strip - matches Figma banner */}
+      <section
+        className="py-6 text-white text-center"
+        style={{ backgroundColor: '#0a3d5c' }}
+      >
         <div className="container mx-auto px-4">
           <p className="text-lg font-medium">
             1 Lakh+ Tenants and Landlords · RentalPlatform
