@@ -21,16 +21,16 @@ export default function CTA({
     : 'text-gray-900'
 
   return (
-    <section className={`${bgColor} ${textColor} py-16 md:py-24 ${className}`}>
+    <section className={`${bgColor} ${textColor} py-16 md:py-24 overflow-hidden ${className}`}>
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-section-title md:text-3xl font-semibold mb-4">
+          <h2 className="text-section-title md:text-3xl font-semibold mb-4 opacity-0 animate-fade-up">
             {content.title}
           </h2>
-          <p className="text-hero-lead md:text-xl mb-8 opacity-90 font-normal">
+          <p className="text-hero-lead md:text-xl mb-8 opacity-90 font-normal opacity-0 animate-fade-up [animation-delay:100ms]">
             {content.description}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center opacity-0 animate-fade-up [animation-delay:200ms]">
             <Link
               href={content.primaryButton.href}
               className={`${

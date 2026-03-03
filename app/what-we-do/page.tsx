@@ -2,23 +2,23 @@ import { getPageContent } from '@/config/content'
 import { generateMetadata as generatePageMetadata } from '@/lib/seo/metadata'
 import Hero from '@/components/ui/Hero'
 import FeatureGrid from '@/components/ui/FeatureGrid'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 const pageContent = getPageContent('what-we-do')
 
-if (!pageContent) {
-  throw new Error('What We Do page content not found')
-}
-
-export const metadata: Metadata = generatePageMetadata(pageContent.seo)
+export const metadata: Metadata = pageContent
+  ? generatePageMetadata(pageContent.seo)
+  : { title: 'What We Do' }
 
 export default function WhatWeDoPage() {
+  if (!pageContent) notFound()
+  const content = pageContent!
   return (
     <>
-      {pageContent.hero && <Hero content={pageContent.hero} />}
-      
-      {pageContent.features && (
-        <FeatureGrid features={pageContent.features} columns={3} />
+      {content.hero && <Hero content={content.hero} />}
+      {content.features && (
+        <FeatureGrid features={content.features} columns={3} />
       )}
     </>
   )

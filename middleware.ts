@@ -14,6 +14,7 @@ export function middleware(request: NextRequest) {
   const publicRoutes = [
     '/',
     '/search',
+    '/property-to-rent',
     '/what-we-are',
     '/what-we-do',
     '/about-tenants',
@@ -24,15 +25,17 @@ export function middleware(request: NextRequest) {
     '/terms',
     '/pricing',
     '/services',
+    '/landlords',
     '/api/auth', // Keycloak callback routes
     '/auth/login',
     '/auth/callback',
     '/error/403',
   ]
 
-  const isPublicRoute = publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + '/')
-  )
+  const isPublicRoute =
+    publicRoutes.some(
+      (route) => pathname === route || pathname.startsWith(route + '/')
+    ) && !pathname.startsWith('/landlords/add-listing')
 
   // Allow public routes and static files
   if (
@@ -44,21 +47,23 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Protected routes - auth guard: redirect to login when token is missing
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
-    const keycloakUrl = process.env.NEXT_PUBLIC_KEYCLOAK_URL
-    const keycloakEnabled =
-      !!keycloakUrl && keycloakUrl !== 'http://localhost:8080' && keycloakUrl !== ''
+  // Protected routes - auth guard: redirect to login when token is missing (Keycloak or Google set same cookie)
+  if (
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/landlords/add-listing')
+  ) {
+    const keycloakUrl = (process.env.NEXT_PUBLIC_KEYCLOAK_URL || '').trim()
+    const googleClientId = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '').trim()
+    const authEnabled = keycloakUrl.length > 0 || googleClientId.length > 0
 
-    if (keycloakEnabled) {
+    if (authEnabled) {
       const token = request.cookies.get('keycloak-token')
       if (!token?.value) {
         const loginUrl = new URL('/auth/login', request.url)
         loginUrl.searchParams.set('redirect', pathname)
         return NextResponse.redirect(loginUrl)
       }
-      // Optional: route guard (menu-based access) - stub until menu/roles from API
-      // if (!hasMenuAccess(pathname, userMenuItems)) return NextResponse.redirect('/error/403')
     }
   }
 

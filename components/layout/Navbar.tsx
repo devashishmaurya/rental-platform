@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useKeycloak } from '@/lib/auth/keycloak'
 import { useState } from 'react'
+import LoginModal from '@/components/ui/LoginModal'
 
 interface DropdownItem {
   name: string
@@ -39,33 +40,13 @@ const navigation: NavigationItem[] = [
       {
         title: 'Packages',
         items: [
-          { name: 'Packages', href: '/pricing/packages' },
           { name: 'Property Advertising', href: '/pricing/property-advertising' },
-          { name: 'Full Tenancy Creation', href: '/pricing/full-tenancy-creation' },
-          { name: 'See All Pricing', href: '/pricing' },
         ],
       },
       {
-        title: 'Services',
+        title: 'Overview',
         items: [
-          // Phase 1: Core services only
-          { name: 'Tenant Referencing', href: '/services/tenant-referencing' },
-          { name: 'Property Advertising', href: '/services/property-advertising' },
-          { name: 'Full Tenancy Creation', href: '/services/full-tenancy-creation' },
-          // Phase 2+ will add:
-          // { name: 'Gas Safety', href: '/services/gas-safety' },
-          // { name: 'EPC', href: '/services/epc' },
-          // { name: 'Electrical Safety', href: '/services/electrical-safety' },
-          // { name: 'Rent Collection', href: '/services/rent-collection' },
-          // { name: 'Management Plus', href: '/services/management-plus' },
-          // { name: 'Inventory', href: '/services/inventory' },
-          // { name: 'Photos & Floor Plans', href: '/services/photos-floor-plans' },
-          // { name: 'Rent Insurance', href: '/services/rent-insurance' },
-          // { name: 'Building Insurance', href: '/services/building-insurance' },
-          // { name: 'Accompanied Viewings', href: '/services/accompanied-viewings' },
-          // { name: 'Mid-Tenancy Inspections', href: '/services/mid-tenancy-inspections' },
-          // { name: 'Legal Support', href: '/services/legal-support' },
-          // { name: 'No-Fault Eviction Notices', href: '/services/no-fault-eviction-notices' },
+          { name: 'What we do', href: '/what-we-do' },
         ],
       },
     ],
@@ -111,9 +92,12 @@ function DropdownMenu({ item }: { item: NavigationItem }) {
       </Link>
 
       {isOpen && (
-        <div className={`absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 ${
-          item.sections ? 'w-80' : 'w-64'
-        }`}>
+        <div
+          className={`absolute top-full left-0 pt-2 z-50 ${item.sections ? 'w-80' : 'w-64'}`}
+          onMouseEnter={() => setIsOpen(true)}
+          onMouseLeave={() => setIsOpen(false)}
+        >
+          <div className="bg-white rounded-lg shadow-xl border border-gray-200 py-2">
           {item.dropdown && (
             <div className="py-1">
               {item.dropdown.map((dropdownItem) => (
@@ -153,7 +137,89 @@ function DropdownMenu({ item }: { item: NavigationItem }) {
               ))}
             </div>
           )}
+          </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+function getUserInitial(user: { name?: string; preferred_username?: string } | null): string {
+  if (!user) return '?'
+  const s = user.name || user.preferred_username || ''
+  return (s.charAt(0) || '?').toUpperCase()
+}
+
+function UserDropdown({
+  user,
+  logout,
+}: {
+  user: { name?: string; preferred_username?: string } | null
+  logout: () => void
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const displayName = user?.name || user?.preferred_username || 'User'
+  const initials = getUserInitial(user)
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white transition-colors"
+        aria-label="User menu"
+      >
+        <span className="hidden md:block truncate max-w-[120px]">{displayName}</span>
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-medium text-white hover:bg-white/30 transition-colors">
+          {initials}
+        </div>
+        <svg
+          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50">
+            <Link
+              href="/dashboard"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/dashboard/account/edit"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              Edit Profile
+            </Link>
+            <div className="border-t border-gray-100 my-1" />
+            <button
+              onClick={() => {
+                setIsOpen(false)
+                logout()
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Log out
+            </button>
+          </div>
+        </>
       )}
     </div>
   )
@@ -161,14 +227,15 @@ function DropdownMenu({ item }: { item: NavigationItem }) {
 
 export default function Navbar() {
   const pathname = usePathname()
-  const { isAuthenticated, isLoading, login, logout, isKeycloakEnabled } = useKeycloak()
+  const { isAuthenticated, isLoading, login, logout, isKeycloakEnabled, user } = useKeycloak()
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
 
   return (
-    <nav
-      className="bg-primary-950 text-white sticky top-0 z-50 w-full"
-      style={{ backgroundColor: '#0a3d5c' }}
-      aria-label="Main navigation"
-    >
+    <>
+      <nav
+        className="nav-classic bg-primary-950 text-white sticky top-0 z-50 w-full"
+        aria-label="Main navigation"
+      >
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -187,7 +254,7 @@ export default function Navbar() {
                 d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
               />
             </svg>
-            <span className="text-xl font-semibold">RentalPlatform</span>
+            <span className="text-xl font-semibold">Rent Setu</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -199,7 +266,7 @@ export default function Navbar() {
 
           {/* CTA Buttons */}
           <div className="flex items-center space-x-4">
-            {/* Add Listing Button - Green */}
+            {/* Add Listing Button */}
             <Link
               href="/landlords/add-listing"
               className="bg-accent-green text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-accent-green-hover transition-colors"
@@ -207,41 +274,15 @@ export default function Navbar() {
               Add Listing
             </Link>
 
-            {/* Sign In / Auth */}
+            {/* Sign In / Auth — show user when authenticated (Keycloak or Google cookie) */}
             {isLoading ? (
               <div className="w-16 h-6 bg-white/20 animate-pulse rounded"></div>
-            ) : isKeycloakEnabled ? (
-              // Keycloak is configured - show real auth
-              isAuthenticated ? (
-                <>
-                  <Link
-                    href="/dashboard"
-                    className="hidden md:block text-sm font-medium text-white/90 hover:text-white transition-colors"
-                  >
-                    Dashboard
-                  </Link>
-                  <button
-                    onClick={logout}
-                    className="text-sm font-medium text-white/90 hover:text-white transition-colors"
-                  >
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={login}
-                  className="text-sm font-medium text-white/90 hover:text-white transition-colors"
-                >
-                  Sign in
-                </button>
-              )
+            ) : isAuthenticated ? (
+              <UserDropdown user={user} logout={logout} />
             ) : (
-              // Keycloak not configured - show placeholder
               <button
-                onClick={login}
-                className="text-sm font-medium text-white/60 cursor-not-allowed"
-                disabled
-                title="Keycloak not configured"
+                onClick={() => setIsLoginModalOpen(true)}
+                className="text-sm font-medium text-white/90 hover:text-white transition-colors"
               >
                 Sign in
               </button>
@@ -253,6 +294,10 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
+
+    {/* Login Modal */}
+    <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
+    </>
   )
 }
 
@@ -300,7 +345,7 @@ function MobileMenu({ navigation }: { navigation: NavigationItem[] }) {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 bg-primary-950 border-t border-primary-800 md:hidden z-50">
+        <div className="nav-mobile-panel absolute top-full left-0 right-0 bg-primary-950 border-t border-primary-800 md:hidden z-50">
           <div className="container mx-auto px-4 py-4">
             {navigation.map((item) => (
               <div key={item.name} className="mb-4">

@@ -30,7 +30,7 @@ export default function HomeTenantsSection() {
               Find Your Next Home
             </h3>
             <p className="text-gray-600 mb-6 leading-relaxed">
-              On RentalPlatform there are never any admin fees. Ever. We take down listings as soon as they are let,
+              On Rent Setu there are never any admin fees. Ever. We take down listings as soon as they are let,
               so no more ghost adverts. And we&apos;ll protect your deposit and rent money.
             </p>
             <ul className="space-y-3 mb-8">

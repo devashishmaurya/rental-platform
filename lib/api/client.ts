@@ -51,6 +51,7 @@ async function handleErrorResponse(response: Response): Promise<never> {
 
 /**
  * Low-level request with token attachment and error handling.
+ * Automatically includes cookies (credentials: 'include') and Authorization header.
  */
 async function request(
   endpoint: string,
@@ -58,15 +59,34 @@ async function request(
 ): Promise<Response> {
   const { getToken, baseURL = DEFAULT_BASE, ...init } = options
   const url = endpoint.startsWith('http') ? endpoint : `${baseURL.replace(/\/$/, '')}${endpoint}`
+  
+  // Log the request for debugging (only in development)
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.log('[API Client] Making request:', {
+      method: init.method || 'GET',
+      url,
+      endpoint,
+      baseURL,
+      hasToken: !!getToken?.(),
+    })
+  }
+  
   const headers = new Headers(init.headers)
   if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
 
+  // Add token to request header
   const token = getToken?.()
   if (token) {
-    headers.set('Authorization', `Bearer ${token}`)
+    headers.set('token', token)
   }
 
-  const response = await fetch(url, { ...init, headers })
+  // Always include credentials (cookies) with requests
+  // This ensures the keycloak-token cookie is automatically sent with all API calls
+  const response = await fetch(url, {
+    ...init,
+    headers,
+    credentials: 'include', // Automatically sends cookies (including keycloak-token) with all requests
+  })
   if (!response.ok) await handleErrorResponse(response)
   return response
 }

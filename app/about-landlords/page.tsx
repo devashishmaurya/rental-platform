@@ -13,18 +13,17 @@ export const metadata: Metadata = pageContent
   : { title: 'About Landlords' }
 
 export default function AboutLandlordsPage() {
-  if (!pageContent) {
-    notFound()
-  }
+  if (!pageContent) notFound()
+  const content = pageContent!
   return (
     <>
-      {pageContent.hero && <Hero content={pageContent.hero} />}
+      {content.hero && <Hero content={content.hero} />}
 
-      {pageContent.features && (
-        <FeatureGrid features={pageContent.features} columns={2} />
+      {content.features && (
+        <FeatureGrid features={content.features} columns={2} />
       )}
 
-      {pageContent.faq && <FAQ items={pageContent.faq} />}
+      {content.faq && <FAQ items={content.faq} />}
     </>
   )
 }

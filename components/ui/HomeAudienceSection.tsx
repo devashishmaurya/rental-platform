@@ -40,7 +40,7 @@ function Card({
   imageAlt: string
 }) {
   return (
-    <article className="flex flex-col h-full bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+    <article className="flex flex-col h-full bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5">
       <div className="relative aspect-[16/10] overflow-hidden">
         <img
           src={image}
@@ -96,19 +96,20 @@ function Card({
 
 export default function HomeAudienceSection() {
   return (
-    <section className="py-14 md:py-20 lg:py-24 bg-gray-50">
+    <section className="py-14 md:py-20 lg:py-24 bg-gray-50 overflow-hidden">
       <div className="container mx-auto px-4 md:px-6">
         <div className="max-w-6xl mx-auto">
           <header className="text-center mb-10 md:mb-14">
-            <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">
+            <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-2 opacity-0 animate-fade-up">
               For Landlords & Tenants
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-gray-600 max-w-2xl mx-auto opacity-0 animate-fade-up [animation-delay:75ms]">
               Whether you want to list your property or find your next home, we’ve got you covered.
             </p>
           </header>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10 lg:gap-12">
+            <div className="opacity-0 animate-fade-up [animation-delay:150ms]">
             <Card
               title="For Landlords"
               subtitle="Advertise Your Rental Property"
@@ -121,6 +122,8 @@ export default function HomeAudienceSection() {
               image={LANDLORD_IMAGE}
               imageAlt="Landlord with laptop managing property"
             />
+            </div>
+            <div className="opacity-0 animate-fade-up [animation-delay:250ms]">
             <Card
               title="For Tenants"
               subtitle="Find Your Next Home"
@@ -133,6 +136,7 @@ export default function HomeAudienceSection() {
               image={TENANT_IMAGE}
               imageAlt="Tenants in new home"
             />
+            </div>
           </div>
         </div>
       </div>

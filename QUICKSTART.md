@@ -18,19 +18,14 @@ cd rental-platform
 npm install
 ```
 
-3. **Set up environment variables:**
-```bash
-cp .env.example .env.local
-```
-
-Edit `.env.local` (Keycloak is optional - leave empty to run without it):
+3. **Set up environment variables:** Create a `.env` file. Keycloak is optional — leave URL and CLIENT_ID empty to run without auth:
 ```env
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
-# Keycloak Configuration (Optional - leave empty for now)
+# Keycloak (optional)
 # NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
-# NEXT_PUBLIC_KEYCLOAK_REALM=rental-platform
-# NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=rental-platform-client
+# NEXT_PUBLIC_KEYCLOAK_REALM=myrealm
+# NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=nextjs-app
 ```
 
 ## Running the Application
@@ -50,30 +45,11 @@ npm run build
 npm start
 ```
 
-## Keycloak Setup (Optional - Skip for Now!)
+## Keycloak Setup (Optional)
 
 **You can run the app without Keycloak!** All pages and features work except authentication.
 
-When you're ready to add Keycloak:
-
-1. **Install Keycloak:**
-   - Download from https://www.keycloak.org/downloads
-   - Or use Docker: `docker run -p 8080:8080 quay.io/keycloak/keycloak`
-
-2. **Install Keycloak JS package:**
-```bash
-npm install keycloak-js
-```
-
-3. **Configure Realm:**
-   - Create realm: `rental-platform`
-   - Create client: `rental-platform-client`
-   - Set redirect URIs: `http://localhost:3000/*`
-   - Enable PKCE
-
-4. **Update `.env.local`** with your Keycloak configuration
-
-See `SETUP_WITHOUT_KEYCLOAK.md` for more details.
+When you're ready: see **[KEYCLOAK_SETUP.md](./KEYCLOAK_SETUP.md)** for env vars, Keycloak Admin client (realm `myrealm`, client `nextjs-app`, redirect URIs `http://localhost:3000/auth/callback` and `http://localhost:3000/*`), and verification. See `SETUP_WITHOUT_KEYCLOAK.md` for running without Keycloak.
 
 ## Project Structure Overview
 
@@ -191,10 +167,10 @@ const footerLinks = {
 
 ### Keycloak Not Working
 
-- Check `.env.local` configuration
+- Check `.env` has `NEXT_PUBLIC_KEYCLOAK_URL`, `NEXT_PUBLIC_KEYCLOAK_REALM`, `NEXT_PUBLIC_KEYCLOAK_CLIENT_ID`
 - Verify Keycloak server is running
-- Check browser console for errors
-- Ensure redirect URIs are configured correctly
+- In Keycloak client: set Valid Redirect URIs (`http://localhost:3000/auth/callback`, `http://localhost:3000/*`) and Web Origins (`http://localhost:3000`)
+- See [KEYCLOAK_SETUP.md](./KEYCLOAK_SETUP.md)
 
 ### Build Errors
 

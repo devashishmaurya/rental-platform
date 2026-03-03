@@ -9,17 +9,12 @@ The application is designed to work **without Keycloak configured**. This allows
 npm install
 ```
 
-2. **Create `.env.local` file:**
-```bash
-cp .env.example .env.local
-```
-
-3. **Leave Keycloak variables empty** (or don't create them):
+2. **Create `.env` file** (if you don't have one) and leave Keycloak variables empty:
 ```env
-# .env.local
+# .env
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
-# Keycloak Configuration - LEAVE EMPTY for now
+# Keycloak – leave URL and CLIENT_ID empty to run without auth
 # NEXT_PUBLIC_KEYCLOAK_URL=
 # NEXT_PUBLIC_KEYCLOAK_REALM=
 # NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=
@@ -46,7 +41,7 @@ http://localhost:3000
 
 ## What's Different Without Keycloak
 
-⚠️ **Login Button**: Shows as disabled/grayed out  
+⚠️ **Sign in**: Links to login page; page shows "Keycloak not configured" until you set up Keycloak  
 ⚠️ **Authentication**: No real authentication (development mode)  
 ⚠️ **Protected Routes**: Dashboard/admin routes are accessible (no protection)  
 
@@ -54,10 +49,9 @@ http://localhost:3000
 
 When Keycloak is not configured:
 
-1. **Navbar Login Button**: 
-   - Shows as disabled/grayed out
-   - Displays "Auth (dev mode)" text
-   - Clicking shows a message about Keycloak setup
+1. **Navbar Sign in**: 
+   - "Sign in" links to the login page
+   - Login page shows a message that Keycloak is not configured
 
 2. **Console Messages**:
    - You'll see: `"Keycloak not configured. Running in development mode without authentication."`
@@ -68,34 +62,13 @@ When Keycloak is not configured:
 
 ## When You're Ready for Keycloak
 
-1. **Install Keycloak** (if not already installed):
-   - Download from https://www.keycloak.org/downloads
-   - Or use Docker: `docker run -p 8080:8080 quay.io/keycloak/keycloak`
+See **[KEYCLOAK_SETUP.md](./KEYCLOAK_SETUP.md)** for full steps. Summary:
 
-2. **Configure Keycloak Realm**:
-   - Create a realm (e.g., `rental-platform`)
-   - Create a client (e.g., `rental-platform-client`)
-   - Set redirect URIs: `http://localhost:3000/*`
-   - Enable PKCE
-
-3. **Install Keycloak JS package**:
-```bash
-npm install keycloak-js
-```
-
-4. **Update `.env.local`**:
-```env
-NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
-NEXT_PUBLIC_KEYCLOAK_REALM=rental-platform
-NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=rental-platform-client
-```
-
-5. **Restart the dev server**:
-```bash
-npm run dev
-```
-
-6. **Login button will now work** and redirect to Keycloak!
+1. **Install Keycloak** (if not already): e.g. Docker: `docker run -p 8080:8080 quay.io/keycloak/keycloak`
+2. **Configure the client** in Keycloak Admin (realm e.g. `myrealm`, client e.g. `nextjs-app`, redirect URIs `http://localhost:3000/auth/callback` and `http://localhost:3000/*`, Web origins `http://localhost:3000`, access type **public**, PKCE).
+3. **Install Keycloak JS**: `npm install keycloak-js`
+4. **Set `.env`** with `NEXT_PUBLIC_KEYCLOAK_URL`, `NEXT_PUBLIC_KEYCLOAK_REALM`, `NEXT_PUBLIC_KEYCLOAK_CLIENT_ID`.
+5. **Restart dev server**: `npm run dev` — Sign in will redirect to Keycloak.
 
 ## Testing Without Keycloak
 
@@ -126,9 +99,9 @@ The application gracefully handles all scenarios.
 
 This is normal when Keycloak is not configured. The app works fine without it.
 
-### Login button doesn't work
+### Sign in shows "Keycloak not configured"
 
-This is expected when Keycloak is not configured. The button is intentionally disabled.
+This is expected when Keycloak is not configured. Set env vars and configure the client as in [KEYCLOAK_SETUP.md](./KEYCLOAK_SETUP.md).
 
 ### Want to test protected routes?
 

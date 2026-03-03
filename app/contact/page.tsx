@@ -1,22 +1,23 @@
 import { getPageContent } from '@/config/content'
 import { generateMetadata as generatePageMetadata } from '@/lib/seo/metadata'
 import Hero from '@/components/ui/Hero'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 const pageContent = getPageContent('contact')
 
-if (!pageContent) {
-  throw new Error('Contact page content not found')
-}
-
-export const metadata: Metadata = generatePageMetadata(pageContent.seo)
+export const metadata: Metadata = pageContent
+  ? generatePageMetadata(pageContent.seo)
+  : { title: 'Contact' }
 
 export default function ContactPage() {
+  if (!pageContent) notFound()
+  const content = pageContent!
   return (
     <>
-      {pageContent.hero && <Hero content={pageContent.hero} />}
+      {content.hero && <Hero content={content.hero} />}
       
-      {pageContent.content?.sections && (
+      {content.content?.sections && (
         <section className="py-16 md:py-24 bg-white">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto">

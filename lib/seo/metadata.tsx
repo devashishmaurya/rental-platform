@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import type { SEOConfig } from '@/config/content'
 
 const defaultSEO: SEOConfig = {
-  title: 'Rental Platform | Renting the way it should be',
+  title: 'Rent Setu | Renting the way it should be',
   description: 'Find your perfect rental property or advertise your property. No admin fees, transparent pricing.',
   keywords: ['rental', 'property', 'tenants', 'landlords'],
   ogType: 'website',
@@ -16,15 +16,15 @@ export function generateMetadata(seoConfig: SEOConfig): Metadata {
     title: seoConfig.title || defaultSEO.title,
     description: seoConfig.description || defaultSEO.description,
     keywords: seoConfig.keywords || defaultSEO.keywords,
-    authors: [{ name: 'Rental Platform' }],
-    creator: 'Rental Platform',
-    publisher: 'Rental Platform',
+    authors: [{ name: 'Rent Setu' }],
+    creator: 'Rent Setu',
+    publisher: 'Rent Setu',
     metadataBase: new URL(siteUrl),
     openGraph: {
       type: seoConfig.ogType || 'website',
       locale: 'en_GB',
       url: seoConfig.canonicalUrl || siteUrl,
-      siteName: 'Rental Platform',
+      siteName: 'Rent Setu',
       title: seoConfig.ogTitle || seoConfig.title || defaultSEO.title,
       description: seoConfig.ogDescription || seoConfig.description || defaultSEO.description,
       images: seoConfig.ogImage
@@ -33,7 +33,7 @@ export function generateMetadata(seoConfig: SEOConfig): Metadata {
               url: seoConfig.ogImage,
               width: 1200,
               height: 630,
-              alt: seoConfig.ogTitle || seoConfig.title || 'Rental Platform',
+              alt: seoConfig.ogTitle || seoConfig.title || 'Rent Setu',
             },
           ]
         : [
@@ -41,7 +41,7 @@ export function generateMetadata(seoConfig: SEOConfig): Metadata {
               url: `${siteUrl}/og-image.jpg`,
               width: 1200,
               height: 630,
-              alt: 'Rental Platform',
+              alt: 'Rent Setu',
             },
           ],
     },
@@ -79,7 +79,7 @@ export function generateStructuredData(type: 'Organization' | 'WebSite' | 'Bread
   if (type === 'Organization') {
     return {
       ...structuredData,
-      name: 'Rental Platform',
+      name: 'Rent Setu',
       url: siteUrl,
       logo: `${siteUrl}/logo.png`,
       sameAs: [
@@ -96,7 +96,7 @@ export function generateStructuredData(type: 'Organization' | 'WebSite' | 'Bread
   if (type === 'WebSite') {
     return {
       ...structuredData,
-      name: 'Rental Platform',
+      name: 'Rent Setu',
       url: siteUrl,
       potentialAction: {
         '@type': 'SearchAction',

@@ -8,13 +8,13 @@ const footerLinks = {
   ],
   landlords: [
     { name: 'List Your Property', href: '/landlords/add-listing' },
-    { name: 'Pricing', href: '/landlords/pricing' },
+    { name: 'Pricing', href: '/pricing/property-advertising' },
     { name: 'Services', href: '/what-we-do' },
   ],
   company: [
     { name: 'About Us', href: '/what-we-are' },
     { name: 'Contact', href: '/contact' },
-    { name: 'Blog', href: '/blog' },
+    { name: 'Blog', href: '/what-we-are' },
   ],
   legal: [
     { name: 'Privacy Policy', href: '/privacy-policy' },
@@ -30,13 +30,13 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link href="/" className="text-2xl font-bold text-white mb-4 block">
-              RentalPlatform
+              Rent Setu
             </Link>
             <p className="text-gray-400 mb-4">
               The destination for finding, advertising, and managing rental property.
             </p>
             <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()} RentalPlatform. All rights reserved.
+              © {new Date().getFullYear()} Rent Setu. All rights reserved.
             </p>
           </div>
 

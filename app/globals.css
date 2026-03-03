@@ -17,6 +17,16 @@
     scroll-behavior: smooth;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
   body {
     @apply text-gray-900 bg-white font-sans text-base font-normal antialiased;
   }
@@ -33,11 +43,39 @@
   }
 
   .hero__image {
-    width: 100%;
+    width: 100% !important;
     max-width: var(--hero-width);
     height: var(--hero-height);
     min-height: var(--hero-min-height);
     object-fit: cover;
     object-position: center;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  /* Mobile optimizations for hero */
+  @media (max-width: 640px) {
+    .hero {
+      min-height: 320px;
+    }
+    
+    .hero__image {
+      min-height: 320px;
+      object-position: center center;
+    }
   }
 }
+
+/* Override Tailwind Preflight so img/video max-width wins (e.g. in flex/grid layouts) */
+img,
+video {
+  max-width: 100% !important;
+  height: auto;
+}
+
+/* Pause reviews marquee when user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .reviews-marquee-track {
+    animation-play-state: paused;
+  }
+}
+

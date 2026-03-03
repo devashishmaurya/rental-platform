@@ -94,7 +94,7 @@ export interface PageContent {
 export const pageContent: Record<string, PageContent> = {
   home: {
     seo: {
-      title: 'Renting the way it should be | Rental Platform',
+      title: 'Renting the way it should be | Rent Setu',
       description: 'Find your perfect rental property or advertise your property. No admin fees, transparent pricing, and trusted by thousands of tenants and landlords.',
       keywords: ['rental', 'property', 'tenants', 'landlords', 'rent', 'India property'],
       ogTitle: 'Renting the way it should be',

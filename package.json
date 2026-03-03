@@ -15,7 +15,7 @@
     "react-dom": "^19.2.4"
   },
   "optionalDependencies": {
-    "keycloak-js": "^24.0.0"
+    "keycloak-js": "^24.0.5"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

@@ -3,6 +3,7 @@ import { generateMetadata as generatePageMetadata } from '@/lib/seo/metadata'
 import Hero from '@/components/ui/Hero'
 import HomeAudienceSection from '@/components/ui/HomeAudienceSection'
 import PortalLogos from '@/components/ui/PortalLogos'
+import HomeTestimonials from '@/components/ui/HomeTestimonials'
 import FeaturedProperties from '@/components/ui/FeaturedProperties'
 import PressSection from '@/components/ui/PressSection'
 import PopularLocations from '@/components/ui/PopularLocations'
@@ -24,12 +25,12 @@ export default function HomePage() {
 
       {/* Stats / social proof strip - matches Figma banner */}
       <section
-        className="py-6 text-white text-center"
+        className="py-6 text-white text-center opacity-0 animate-fade-up [animation-delay:150ms]"
         style={{ backgroundColor: '#0a3d5c' }}
       >
         <div className="container mx-auto px-4">
           <p className="text-lg font-medium">
-            1 Lakh+ Tenants and Landlords · RentalPlatform
+            1 Lakh+ Tenants and Landlords · Rent Setu
           </p>
         </div>
       </section>
@@ -37,48 +38,11 @@ export default function HomePage() {
       <HomeAudienceSection />
       <PortalLogos />
 
-      {/* Testimonials */}
-      {content.testimonials && content.testimonials.length > 0 && (
-        <section className="py-16 md:py-24 bg-white">
-          <div className="container mx-auto px-4">
-            <h2 className="text-2xl md:text-3xl font-semibold text-center mb-4 text-gray-900">
-              What people are saying
-            </h2>
-            {content.testimonialsSubtitle && (
-              <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
-                {content.testimonialsSubtitle}
-              </p>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {content.testimonials.map((testimonial, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-50 p-6 rounded-xl border border-gray-100"
-                >
-                  <div className="flex items-center mb-4">
-                    {testimonial.rating && (
-                      <div className="flex text-yellow-400" aria-hidden>
-                        {'★'.repeat(testimonial.rating)}
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-gray-700 mb-4 italic">
-                    &ldquo;{testimonial.content}&rdquo;
-                  </p>
-                  <p className="font-semibold text-gray-900">
-                    {testimonial.name}
-                    {testimonial.role && (
-                      <span className="text-gray-600 font-normal">
-                        {' '}— {testimonial.role}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Testimonials / User reviews (API-driven with fallback from content) */}
+      <HomeTestimonials
+        fallbackTestimonials={content.testimonials}
+        testimonialsSubtitle={content.testimonialsSubtitle}
+      />
 
       <FeaturedProperties />
       {/* <PressSection /> */}

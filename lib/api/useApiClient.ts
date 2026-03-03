@@ -12,33 +12,37 @@ export function useApiClient() {
   const { token } = useKeycloak()
   return useMemo(
     () => ({
-      get: <T = unknown>(endpoint: string, options?: { headers?: HeadersInit }) =>
-        apiClient.get<T>(endpoint, { getToken: () => token, baseURL: getBaseURL(), ...options }),
+      get: <T = unknown>(endpoint: string, options?: { headers?: HeadersInit; baseURL?: string }) =>
+        apiClient.get<T>(endpoint, { 
+          getToken: () => token, 
+          baseURL: options?.baseURL !== undefined ? options.baseURL : getBaseURL(), 
+          headers: options?.headers 
+        }),
       post: <T = unknown>(
         endpoint: string,
         data?: unknown,
-        options?: { headers?: HeadersInit }
+        options?: { headers?: HeadersInit; baseURL?: string }
       ) =>
         apiClient.post<T>(endpoint, data, {
           getToken: () => token,
-          baseURL: getBaseURL(),
-          ...options,
+          baseURL: options?.baseURL !== undefined ? options.baseURL : getBaseURL(),
+          headers: options?.headers,
         }),
       put: <T = unknown>(
         endpoint: string,
         data?: unknown,
-        options?: { headers?: HeadersInit }
+        options?: { headers?: HeadersInit; baseURL?: string }
       ) =>
         apiClient.put<T>(endpoint, data, {
           getToken: () => token,
-          baseURL: getBaseURL(),
-          ...options,
+          baseURL: options?.baseURL !== undefined ? options.baseURL : getBaseURL(),
+          headers: options?.headers,
         }),
-      delete: <T = unknown>(endpoint: string, options?: { headers?: HeadersInit }) =>
+      delete: <T = unknown>(endpoint: string, options?: { headers?: HeadersInit; baseURL?: string }) =>
         apiClient.delete<T>(endpoint, {
           getToken: () => token,
-          baseURL: getBaseURL(),
-          ...options,
+          baseURL: options?.baseURL !== undefined ? options.baseURL : getBaseURL(),
+          headers: options?.headers,
         }),
     }),
     [token]

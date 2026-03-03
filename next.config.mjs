@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone', // Required for Docker (produces server.js)
   // Note: "output: 'export'" is not used because middleware (auth guard) requires a Node server.
   // For static hosting, use a platform that runs Next (e.g. Vercel) or remove middleware.
   images: {

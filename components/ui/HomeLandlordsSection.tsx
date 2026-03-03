@@ -23,7 +23,7 @@ export default function HomeLandlordsSection() {
             </h3>
             <p className="text-gray-600 mb-6 leading-relaxed">
               We find you tenants and help with referencing, contracts and more if you need it.
-              RentalPlatform gives you the best possible chance of finding your ideal tenant, and you stay in control.
+              Rent Setu gives you the best possible chance of finding your ideal tenant, and you stay in control.
             </p>
             <ul className="space-y-3 mb-8">
               {bullets.map((item) => (

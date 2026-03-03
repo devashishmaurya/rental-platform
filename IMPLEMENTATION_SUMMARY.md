@@ -169,6 +169,8 @@ rental-platform/
 ### Main Documentation
 - **README.md**: Comprehensive project documentation
 - **ARCHITECTURE.md**: Detailed architecture documentation
+- **KEYCLOAK_SETUP.md**: Keycloak login setup (env + Admin client)
+- **SETUP_WITHOUT_KEYCLOAK.md**: Running without Keycloak
 - **MICROFRONTEND.md**: Microfrontend strategy
 - **QUICKSTART.md**: Quick start guide
 
@@ -190,7 +192,7 @@ rental-platform/
 1. Customize content in `config/content.ts`
 2. Update branding and colors
 3. Add images to `public/` folder
-4. Configure Keycloak realm
+4. Configure Keycloak (see `KEYCLOAK_SETUP.md`)
 
 ### Long Term
 1. Add property search functionality

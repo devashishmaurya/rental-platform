@@ -73,22 +73,17 @@ cd rental-platform
 npm install
 ```
 
-2. **Set up environment variables:**
-```bash
-cp .env.example .env.local
-```
-
-Edit `.env.local` (Keycloak is optional - leave empty to run without it):
+2. **Set up environment variables:** Create a `.env` file in the project root. Keycloak is optional — leave `NEXT_PUBLIC_KEYCLOAK_URL` and `NEXT_PUBLIC_KEYCLOAK_CLIENT_ID` empty to run without auth:
 ```env
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
-# Keycloak Configuration (Optional - leave empty for now)
+# Keycloak (optional – leave URL and CLIENT_ID empty to run without auth)
 # NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
-# NEXT_PUBLIC_KEYCLOAK_REALM=rental-platform
-# NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=rental-platform-client
+# NEXT_PUBLIC_KEYCLOAK_REALM=myrealm
+# NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=nextjs-app
 ```
 
-**Note**: The application works perfectly without Keycloak configured. See `SETUP_WITHOUT_KEYCLOAK.md` for details.
+**Note**: The application works without Keycloak. See `SETUP_WITHOUT_KEYCLOAK.md` and `KEYCLOAK_SETUP.md` for auth setup.
 
 3. **Run development server:**
 ```bash
@@ -191,25 +186,14 @@ export default function NewPage() {
 
 ### Setup (Optional)
 
-**The app works without Keycloak!** Skip this section if you want to develop without authentication.
+**The app works without Keycloak!** Skip this section to develop without authentication.
 
-1. **Install Keycloak JS package:**
-```bash
-npm install keycloak-js
-```
+For full steps (env vars, Keycloak Admin client settings, redirect URIs), see **[KEYCLOAK_SETUP.md](./KEYCLOAK_SETUP.md)**.
 
-2. **Configure Keycloak Realm:**
-   - Create a realm named `rental-platform`
-   - Create a client with ID `rental-platform-client`
-   - Set redirect URIs: `http://localhost:3000/*`
-   - Enable PKCE
-
-3. **Environment Variables:**
-```env
-NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
-NEXT_PUBLIC_KEYCLOAK_REALM=rental-platform
-NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=rental-platform-client
-```
+1. **Install Keycloak JS:** `npm install keycloak-js`
+2. **Configure Keycloak:** Realm (e.g. `myrealm`), client (e.g. `nextjs-app`), redirect URIs `http://localhost:3000/auth/callback` and `http://localhost:3000/*`, Web origins `http://localhost:3000`, access type **public**, PKCE.
+3. **Set `.env`:** `NEXT_PUBLIC_KEYCLOAK_URL`, `NEXT_PUBLIC_KEYCLOAK_REALM`, `NEXT_PUBLIC_KEYCLOAK_CLIENT_ID`
+4. Restart dev server.
 
 See `SETUP_WITHOUT_KEYCLOAK.md` for running without Keycloak.
 

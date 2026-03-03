@@ -1,0 +1,40 @@
+WBS ID,Work Package,Description,Owner,Phase,Start,End,Depends On,Deliverables,Status
+1.1,Navbar About dropdown,About menu: Landlords | Tenants | OpenRent; Tenants to tenant hub/search,Devashish Maurya,P1 (started),07-Feb-2025,—,—,Navbar component updated,Started
+1.2,Post-login UX,Logged-in name + avatar; dropdown (Edit Profile Switch Account Log out); click to My Dashboard,Devashish Maurya,P1 (started),07-Feb-2025,—,Auth,User menu component,Started
+1.3,My Dashboard shell,Tabs (Dashboard Account Landlord Services); sidebar (Favourites Saved Searches Your Enquiries Verified Tenant); welcome + Search Listings + Create listing cards,Devashish Maurya,P1 (started),07-Feb-2025,—,1.2,/my-dashboard page,Started
+1.4,Google login,Two options: Keycloak (existing) + Sign in with Google; OAuth flow callback; backend Google JWT or Keycloak broker,Devashish Maurya / Vinod Saini,P2,24-Feb-2025,08-Mar-2025,1.2 Auth,Login UI + Google OAuth; backend support,Upcoming
+2.1,Account section,Route /account/edit; sidebar: Edit Details My Photo Credits Delete Account,Devashish Maurya,P1 (started),07-Feb-2025,—,1.2,Account layout + sidebar,Started
+2.2,Edit details form,Password Email First/Last name Primary phone (+91); wire to GET/PUT profile API,Devashish Maurya,P2,24-Feb-2025,08-Mar-2025,2.1 + API 5.6,Profile form,Upcoming
+2.3,Profile photo upload,My Photo: upload crop display; wire to storage/API,Devashish Maurya,P5,04-Apr-2025,15-Apr-2025,2.1 + API + storage,Photo upload component,Upcoming
+3.1,Services Overview,"Route /landlord-services or /services-overview. Left sidebar: 17 services; right panel: 11 blocks; click left to show right; PA to /pricing/property-advertising. Backend for 17+11: PA=5.1; Tenancy Creation=5.4 5.5 6.4; Referencing=6.1-6.4; remaining 8 = Coming soon (no backend)",Devashish Maurya,P2,24-Feb-2025,08-Mar-2025,1.3,Full left + right; PA opens existing page,Upcoming
+3.2,Property Advertising,Link to /pricing/property-advertising (existing page). Enhance: hero stats packages API CTA,Devashish Maurya,P3,09-Mar-2025,21-Mar-2025,3.1 + API 5.1,PA page + enhancements,Upcoming
+3.3,Tenancy Creation,What is Rent Now benefits Moving forward Add Property CTA; right panel + full page /rent/tenancycreation,Devashish Maurya,P3,09-Mar-2025,21-Mar-2025,3.1,Tenancy Creation block + page,Upcoming
+3.4,Tenant Referencing,Pricing Initial/Final report product breakdown FAQs Begin Referencing CTA; right panel + /tenant-referencing; wire API 6.x,Devashish Maurya,P3,09-Mar-2025,21-Mar-2025,3.1 + API 6.x,Tenant Referencing block + page,Upcoming
+3.5,Remaining 8 right-panel blocks,Management Plus RGI Building Insurance Gas Safety EPC Electrical Safety Inventory Pro Photos — copy + CTA or Coming soon,Devashish Maurya,P3,09-Mar-2025,21-Mar-2025,3.1,8 blocks as placeholder / Coming soon,Upcoming
+4.1,Tenant entry and search,About to Tenants; /search or /find-property; filters and listing rows,Devashish Maurya,P1 (started),07-Feb-2025,—,1.1 + existing search,Tenant hub + search,Started
+4.2,Listing detail page,Route /property/[id]; full listing photos rent address Message landlord CTA,Devashish Maurya,P2,24-Feb-2025,08-Mar-2025,API 5.2,Property detail page,Upcoming
+4.3,Message landlord,Route /message-landlord/[id] or modal; auth required; form to enquiries API,Devashish Maurya,P2,24-Feb-2025,08-Mar-2025,4.2 + API 5.3,Enquiry form + POST,Upcoming
+4.4,Rent Now info (tenant),Route /rent/rent-now-info/[id] or under My Tenancies; status documents next steps,Devashish Maurya,P5,04-Apr-2025,15-Apr-2025,API 5.4,Rent Now info view,Upcoming
+4.5,My Tenancies,Route /my-tenancies; list tenancies view details certificates upload/view documents,Devashish Maurya,P2–P3,24-Feb-2025,21-Mar-2025,API 5.4 5.5,My Tenancies page,Upcoming
+4.6,Referencing onboarding (tenant),Tenant link to complete referencing; form + document upload; wire to API,Devashish Maurya,P4,22-Mar-2025,03-Apr-2025,API 6.2,Referencing form page,Upcoming
+5.1,Listing add + view + stats + packages,POST /api/listing/add POST /api/listing/v1.0/view GET stats GET packages,Vinod Saini,P1 (started),07-Feb-2025,—,DB 7.1,4 endpoints live,Started
+5.1a,Auth Google login support,Backend accepts Google OAuth tokens or Keycloak Google identity broker,Vinod Saini,P2,24-Feb-2025,08-Mar-2025,—,Google JWT validation or Keycloak broker,Upcoming
+5.2,Listing detail,GET /api/listings/{id} (public),Vinod Saini,P2,24-Feb-2025,08-Mar-2025,DB,Listing by id,Upcoming
+5.3,Enquiries / messages,POST /api/enquiries or /api/messages; GET list by user,Vinod Saini,P2,24-Feb-2025,08-Mar-2025,DB 7.1,Enquiry APIs,Upcoming
+5.4,Tenancies (tenant view),GET /api/tenancies/mine GET /api/tenancies/{id},Vinod Saini,P2–P3,24-Feb-2025,21-Mar-2025,DB,Tenancy APIs,Upcoming
+5.5,Tenancy documents and certificates,GET/POST /api/tenancies/{id}/documents certificates; upload (landlord),Vinod Saini,P2–P3,24-Feb-2025,21-Mar-2025,DB + Storage 7.2,Document/certificate APIs,Upcoming
+5.6,Account profile,GET / PUT /api/account/profile or /api/users/me,Vinod Saini,P2,24-Feb-2025,08-Mar-2025,DB,Profile APIs,Upcoming
+6.1,Referencing initiate,Landlord starts referencing; create application; generate tenant link,Vinod Saini,P3–P4,09-Mar-2025,03-Apr-2025,DB,Referencing initiation API,Upcoming
+6.2,Referencing complete (tenant),GET/POST /api/referencing/complete/{token}; tenant form + file upload,Vinod Saini,P4,22-Mar-2025,03-Apr-2025,6.1 + Storage 7.2,Referencing complete API,Upcoming
+6.3,Referencing provider integration,Credit/ID checks (India partner); store report; status webhooks,Vinod Saini,P4,22-Mar-2025,03-Apr-2025,6.1,Provider integration,Upcoming
+6.4,Payment gateway,Razorpay/Stripe for referencing Tenancy Creation Portal package; webhooks,Vinod Saini,P4,22-Mar-2025,03-Apr-2025,—,Payment + webhooks,Upcoming
+7.1,PostgreSQL migrations,users account listings enquiries tenancies documents pricing_packages; indexes,Pooja Chhetri,P1 (started),07-Feb-2025,—,—,Flyway/Liquibase scripts,Started
+7.2,File storage (S3),Certificates referencing docs profile photo; presigned or server upload,Pooja Chhetri,P3–P4,09-Mar-2025,03-Apr-2025,—,S3 bucket + upload API,Upcoming
+7.3,Docker and VPS,Frontend + Java + Postgres; Nginx; env and secrets,Vinod Saini,P1–P5,07-Feb-2025,15-Apr-2025,Existing,Running on VPS,Started
+
+Phase Summary,,,,,,,,,
+Phase 1 - Foundation,Started 7 Feb (skipped in plan),,,07-Feb-2025,—,,,,
+Phase 2 - Listings and Enquiries,,,24-Feb-2025,08-Mar-2025,,,,
+Phase 3 - Landlord Services and Prep,,,09-Mar-2025,21-Mar-2025,,,,
+Phase 4 - Referencing and Payments,,,22-Mar-2025,03-Apr-2025,,,,
+Phase 5 - Polish and Launch,,,04-Apr-2025,15-Apr-2025,,,,

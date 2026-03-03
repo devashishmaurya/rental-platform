@@ -15,7 +15,7 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = generateDefaultMetadata({
-  title: 'Rental Platform | Renting the way it should be',
+  title: 'Rent Setu | Renting the way it should be',
   description: 'The destination for finding, advertising, and managing rental property',
   ogType: 'website',
 })

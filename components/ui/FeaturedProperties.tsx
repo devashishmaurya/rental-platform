@@ -20,12 +20,12 @@ const featured = [
 
 export default function FeaturedProperties() {
   return (
-    <section className="py-16 md:py-24 bg-white">
+    <section className="py-16 md:py-24 bg-white overflow-hidden">
       <div className="container mx-auto px-4">
-        <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">
+        <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-2 opacity-0 animate-fade-up">
           Featured Properties
         </h2>
-        <p className="text-gray-600 mb-10">
+        <p className="text-gray-600 mb-10 opacity-0 animate-fade-up [animation-delay:75ms]">
           Some of our available and recently let properties
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -33,7 +33,8 @@ export default function FeaturedProperties() {
             <Link
               key={i}
               href="/search"
-              className="group block bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-primary-200 transition-all"
+              className="group block bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-primary-200 transition-all duration-300 opacity-0 animate-fade-up hover:-translate-y-0.5"
+              style={{ animationDelay: `${120 + i * 80}ms` }}
             >
               <div className="relative aspect-[4/3] overflow-hidden">
                 <img
@@ -69,7 +70,7 @@ export default function FeaturedProperties() {
         <div className="mt-10 text-center">
           <Link
             href="/search"
-            className="inline-flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+            className="inline-flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors opacity-0 animate-fade-up [animation-delay:550ms]"
           >
             View all properties
           </Link>
