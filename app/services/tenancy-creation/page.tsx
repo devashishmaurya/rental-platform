@@ -95,7 +95,7 @@ export default function TenancyCreationPage() {
                   Already have tenants lined up? You can still use Tenancy
                   Creation without advertising the property first.
                 </p>
-              </div>
+              </div> 
 
               <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <Link
