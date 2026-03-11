@@ -12,6 +12,15 @@ const FURNISHING_LABELS: Record<string, string> = {
   UNFURNISHED: 'Unfurnished',
 }
 
+// Temporary mock property images (served from /public/assets/properties/*)
+const MOCK_PROPERTY_IMAGES: string[] = [
+  '/assets/properties/property-1.jpeg',
+  '/assets/properties/property-2.jpeg',
+  '/assets/properties/property-3.jpeg',
+  '/assets/properties/property-4.jpeg',
+  '/assets/properties/property-5.jpeg',
+]
+
 interface ViewListingItem {
   id?: number
   houseNumber?: string | null
@@ -30,7 +39,7 @@ interface ViewListingItem {
   imageUrl?: string | null
   thumbnailUrl?: string | null
   billsIncluded?: boolean | null
-  availableFrom?: string | null
+  earliestMoveIn?: string | null
   minimumTenancyMonths?: number | null
   acceptStudents?: boolean | null
   acceptFamilies?: boolean | null
@@ -49,7 +58,7 @@ interface ViewListingItem {
   images?: string[] | null
   /**
    * Landlord – for "Meet the Landlord" section. Backend keys (same names in API response):
-   * - landlordName: string (e.g. "Nazneen Z.")
+   * - name: string (e.g. "Nazneen Z.")
    * - landlordAvatarUrl: string (profile image URL)
    * - landlordResponseRate: number (e.g. 99 for 99%)
    * - landlordResponseTime: string (e.g. "Within 3 Days")
@@ -57,13 +66,14 @@ interface ViewListingItem {
    * - landlordEmailVerified: boolean
    * - landlordPhoneVerified: boolean
    */
-  landlordName?: string | null
+  name?: string | null
   landlordAvatarUrl?: string | null
   landlordResponseRate?: number | null
   landlordResponseTime?: string | null
   landlordMemberSince?: string | null
   landlordEmailVerified?: boolean | null
   landlordPhoneVerified?: boolean | null
+  landlordId?: number | string | null
   [key: string]: unknown
 }
 
@@ -259,12 +269,9 @@ export default function PropertyDetailsPage() {
   const address = buildAddress(listing)
   const title = buildTitle(listing)
   const locationLabel = [listing.town, listing.postcode].filter(Boolean).join(', ') || address || '—'
-  const mainImage = listing.imageUrl ?? listing.thumbnailUrl
-  const thumbImage = listing.thumbnailUrl ?? listing.imageUrl
-  const imagesArray = Array.isArray(listing.images) && listing.images.length > 0
-    ? listing.images.filter((u): u is string => typeof u === 'string' && u.trim() !== '')
-    : [mainImage, thumbImage].filter((u): u is string => typeof u === 'string' && u.trim() !== '')
-  const images = imagesArray.length > 0 ? imagesArray : (mainImage && mainImage.trim() ? [mainImage] : [])
+
+  // For now, use static mock images for the property gallery (later we can wire real media URLs)
+  const images = MOCK_PROPERTY_IMAGES
   const hasMultipleImages = images.length > 1
   const displayImage = images[selectedImageIndex] ?? images[0]
 
@@ -276,7 +283,7 @@ export default function PropertyDetailsPage() {
   const furnishing = listing.furnishing
     ? FURNISHING_LABELS[listing.furnishing] || listing.furnishing
     : null
-  const availableFrom = listing.availableFrom?.trim() || '—'
+  const availableFrom = listing.earliestMoveIn?.trim() || '—'
   const minTenancy =
     typeof listing.minimumTenancyMonths === 'number' && listing.minimumTenancyMonths > 0
       ? `${listing.minimumTenancyMonths} month${listing.minimumTenancyMonths === 1 ? '' : 's'}`
@@ -633,16 +640,34 @@ export default function PropertyDetailsPage() {
                 )}
               </div>
               <div className="p-5 space-y-3">
-                <p className="text-gray-600 text-sm">Questions or viewing enquiries?</p>
+                <p className="text-gray-600 text-sm flex items-center gap-1">
+                  No admin fees
+                  <span className="text-green-600">✓</span>
+                </p>
+                <p className="text-gray-600 text-sm flex items-center gap-1">
+                  No hidden charges
+                  <span className="text-green-600">✓</span>
+                </p>
+                <p className="text-gray-700 text-sm font-medium pt-1">Ready to Rent Now?</p>
                 <span
                   title="Coming soon"
-                  className="block w-full text-center bg-primary-600/80 text-white font-semibold py-3 px-4 rounded-lg text-sm cursor-not-allowed"
+                  className="block w-full text-center bg-green-600/90 text-white font-semibold py-3 px-4 rounded-lg text-sm cursor-not-allowed"
                 >
-                  Message Landlord or Request Viewing
+                  Rent Now
                 </span>
-                <p className="text-gray-500 text-xs text-center pt-1">
-                  No admin fees · No hidden charges
-                </p>
+                <p className="text-gray-600 text-sm font-medium pt-2">Next Steps</p>
+                {listing.id != null ? (
+                  <Link
+                    href={`/message-landlord/${listing.id}`}
+                    className="block w-full text-center bg-primary-600 text-white font-semibold py-3 px-4 rounded-lg text-sm hover:bg-primary-700 transition-colors"
+                  >
+                    Message Landlord or Request Viewing
+                  </Link>
+                ) : (
+                  <span className="block w-full text-center bg-gray-300 text-gray-500 font-semibold py-3 px-4 rounded-lg text-sm cursor-not-allowed">
+                    Message Landlord or Request Viewing
+                  </span>
+                )}
                 <span
                   title="Coming soon"
                   className="block w-full text-center border-2 border-gray-300 text-gray-500 font-semibold py-2.5 px-4 rounded-lg text-sm cursor-not-allowed"
@@ -651,10 +676,19 @@ export default function PropertyDetailsPage() {
                 </span>
               </div>
 
-              <div className="px-5 py-3 border-t border-gray-100">
+              <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
                 <p className="text-gray-500 text-xs">
                   Property reference: <span className="font-medium text-gray-700">{listing.id ?? id}</span>
                 </p>
+                <Link
+                  href={listing.id != null ? `/report/${listing.id}` : '#'}
+                  className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  <svg className="w-4 h-4 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  Report listing
+                </Link>
               </div>
 
               {/* Meet the Landlord - OpenRent style */}
@@ -665,18 +699,18 @@ export default function PropertyDetailsPage() {
                     {listing.landlordAvatarUrl && listing.landlordAvatarUrl.trim() ? (
                       <img
                         src={listing.landlordAvatarUrl}
-                        alt={listing.landlordName || 'Landlord'}
+                        alt={listing.name || 'Landlord'}
                         className="w-14 h-14 rounded-full object-cover bg-gray-100"
                       />
                     ) : (
                       <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-lg font-semibold">
-                        {(listing.landlordName || 'L').charAt(0).toUpperCase()}
+                        {(listing.name || 'L').charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-gray-900 truncate">
-                      {listing.landlordName?.trim() || 'Landlord'}
+                      {listing.name?.trim() || 'Landlord'}
                     </p>
                     {listing.landlordResponseRate != null && (
                       <p className="text-sm text-gray-600 mt-1">

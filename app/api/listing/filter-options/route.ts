@@ -6,7 +6,7 @@ const FILTER_OPTIONS_URL = process.env.NEXT_PUBLIC_API_URL
 
 /**
  * Proxy for GET /api/listing/filter-options?field=... — forwards to backend.
- * Supported fields: property_type, furnishing, BEDROOMS, BATHROOMS, TOWN, EPC_RATING
+ * Supported fields: PRICE, BEDROOMS, property_type, furnishing, BATHROOMS, TOWN, EPC_RATING
  */
 export async function GET(request: NextRequest) {
   if (!FILTER_OPTIONS_URL) {

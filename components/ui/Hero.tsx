@@ -1,9 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { HeroSection } from '@/config/content'
+
+const DEBOUNCE_MS = 300
+
+/** Parse towns/search API response (array or responseMessage.responseData) */
+function parseTownsResponse(data: unknown): string[] {
+  if (Array.isArray(data)) return data
+  if (data && typeof data === 'object' && 'responseMessage' in data) {
+    const msg = (data as { responseMessage?: { responseData?: unknown } }).responseMessage
+    const arr = msg?.responseData
+    return Array.isArray(arr) ? arr : []
+  }
+  if (data && typeof data === 'object' && 'responseData' in data) {
+    const arr = (data as { responseData?: unknown }).responseData
+    return Array.isArray(arr) ? arr : []
+  }
+  return []
+}
 
 interface HeroProps {
   content: HeroSection
@@ -13,11 +31,101 @@ interface HeroProps {
 export default function Hero({ content, className = '' }: HeroProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null)
+
+  // Fetch location suggestions (OpenRent-style type-ahead)
+  useEffect(() => {
+    const keyword = searchQuery.trim()
+    if (!keyword) {
+      setSuggestions([])
+      setDropdownOpen(false)
+      return
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setLoading(true)
+      fetch(`/api/listing/towns/search?keyword=${encodeURIComponent(keyword)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const list = parseTownsResponse(data)
+          setSuggestions(list)
+          setDropdownOpen(list.length > 0)
+        })
+        .catch(() => {
+          setSuggestions([])
+          setDropdownOpen(false)
+        })
+        .finally(() => setLoading(false))
+    }, DEBOUNCE_MS)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [searchQuery])
+
+  // Position dropdown (for portal) when open
+  useEffect(() => {
+    if (!dropdownOpen || !inputRef.current) {
+      setDropdownRect(null)
+      return
+    }
+    const measure = () => {
+      if (inputRef.current) {
+        const rect = inputRef.current.getBoundingClientRect()
+        setDropdownRect({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width,
+        })
+      }
+    }
+    measure()
+    window.addEventListener('scroll', measure, true)
+    window.addEventListener('resize', measure)
+    return () => {
+      window.removeEventListener('scroll', measure, true)
+      window.removeEventListener('resize', measure)
+    }
+  }, [dropdownOpen, suggestions.length])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (wrapperRef.current?.contains(target)) return
+      const portal = document.getElementById('hero-location-dropdown-portal')
+      if (portal?.contains(target)) return
+      setDropdownOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleSelectLocation = useCallback((location: string) => {
+    setSelectedLocation(location)
+    setSearchQuery('')
+    setSuggestions([])
+    setDropdownOpen(false)
+  }, [])
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedLocation(null)
+  }, [])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    const q = searchQuery.trim()
-    router.push(q ? `/search?q=${encodeURIComponent(q)}` : '/search')
+    const term = selectedLocation || searchQuery.trim()
+    if (term) {
+      router.push(`/search?term=${encodeURIComponent(term)}`)
+    } else {
+      router.push('/search')
+    }
   }
 
   const heroImage = content.backgroundImage || content.image
@@ -63,12 +171,12 @@ export default function Hero({ content, className = '' }: HeroProps) {
             )}
           </div>
 
-          {/* Search Bar - mobile optimized */}
+          {/* Search Bar - OpenRent-style: selected location inside the search box only */}
           {content.searchPlaceholder && (
-            <div className="mb-4 sm:mb-6 opacity-0 animate-fade-up [animation-delay:200ms] px-2 sm:px-0">
+            <div className="mb-4 sm:mb-6 opacity-0 animate-fade-up [animation-delay:200ms] px-2 sm:px-0 overflow-visible" ref={wrapperRef}>
               <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:gap-2 max-w-2xl mx-auto">
                 <div className="flex-1 relative">
-                  <div className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
+                  <div className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500 z-10 pointer-events-none">
                     <svg
                       className="w-5 h-5 sm:w-6 sm:h-6"
                       fill="none"
@@ -90,12 +198,78 @@ export default function Hero({ content, className = '' }: HeroProps) {
                     </svg>
                   </div>
                   <input
+                    ref={inputRef}
                     type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    value={selectedLocation ?? searchQuery}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      if (selectedLocation) setSelectedLocation(null)
+                      setSearchQuery(v)
+                    }}
                     placeholder={content.searchPlaceholder}
-                    className="w-full pl-11 sm:pl-12 pr-4 py-3.5 sm:py-4 rounded-xl sm:rounded-lg text-base sm:text-lg bg-white/95 backdrop-blur-sm border-2 border-white/20 focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg transition-all duration-200"
+                    className="w-full pl-11 sm:pl-12 pr-10 sm:pr-10 py-3.5 sm:py-4 rounded-xl sm:rounded-lg text-base sm:text-lg text-gray-900 placeholder:text-gray-600 bg-white/95 backdrop-blur-sm border-2 border-white/20 focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg transition-all duration-200"
                   />
+                  {selectedLocation && (
+                    <button
+                      type="button"
+                      onClick={handleClearSelection}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800 p-1 rounded"
+                      aria-label="Clear location"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                  {/* Dropdown rendered in portal so it's not clipped by hero overflow and clicks always register */}
+                  {dropdownOpen && suggestions.length > 0 && dropdownRect &&
+                    createPortal(
+                      <ul
+                        id="hero-location-dropdown-portal"
+                        role="listbox"
+                        className="fixed rounded-xl border border-gray-200 bg-white shadow-lg max-h-60 overflow-auto z-[9999] text-left"
+                        style={{
+                          top: dropdownRect.top,
+                          left: dropdownRect.left,
+                          width: dropdownRect.width,
+                        }}
+                      >
+                        {suggestions.map((item) => (
+                          <li
+                            key={item}
+                            role="option"
+                            tabIndex={0}
+                            className="px-4 py-3 text-gray-900 hover:bg-primary-50 cursor-pointer border-b border-gray-100 last:border-0 select-none"
+                            onMouseDown={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              handleSelectLocation(item)
+                            }}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handleSelectLocation(item)
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                handleSelectLocation(item)
+                              }
+                            }}
+                          >
+                            {item}
+                          </li>
+                        ))}
+                      </ul>,
+                      document.body
+                    )}
+                  {loading && searchQuery.trim() && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                      <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24" aria-hidden>
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
                 <button
                   type="submit"

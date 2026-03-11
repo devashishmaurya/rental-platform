@@ -6,6 +6,8 @@ export interface SearchListingRowProps {
   href?: string
   /** Image URL; when empty or not provided, "No image provided" is shown */
   image?: string
+  /** Landlord profile image (small avatar overlay) */
+  landlordImage?: string
   title: string
   location?: string
   price: string
@@ -25,6 +27,7 @@ export interface SearchListingRowProps {
 export default function SearchListingRow({
   href = '/search',
   image,
+  landlordImage,
   title,
   location,
   price,

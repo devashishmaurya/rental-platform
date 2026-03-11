@@ -1,11 +1,16 @@
 import type { Metadata } from 'next'
-import ComingSoon from '@/components/ui/ComingSoon'
+import { TenantReferencingContent } from '@/components/services/TenantReferencingContent'
 
 export const metadata: Metadata = {
   title: 'Tenant Referencing | Rent Setu',
-  description: 'Comprehensive tenant referencing and background checks for landlords. Coming soon.',
+  description:
+    'Comprehensive tenant referencing and background checks for landlords – modelled on OpenRent’s Referencing service.',
 }
 
 export default function TenantReferencingPage() {
-  return <ComingSoon title="Tenant Referencing" />
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <TenantReferencingContent />
+    </div>
+  )
 }

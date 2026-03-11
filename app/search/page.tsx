@@ -14,16 +14,29 @@ const FURNISHING_LABELS: Record<string, string> = {
   UNFURNISHED: 'Unfurnished',
 }
 
-/** Backend filter-options field names */
+// Temporary mock property images (served from /public/assets/properties/*)
+const MOCK_PROPERTY_IMAGES: string[] = [
+  '/assets/properties/property-1.jpeg',
+  '/assets/properties/property-2.jpeg',
+  '/assets/properties/property-3.jpeg',
+  '/assets/properties/property-4.jpeg',
+  '/assets/properties/property-5.jpeg',
+]
+
+/** Backend filter-options field names (refine panel) */
 const FILTER_OPTION_FIELDS = ['property_type', 'furnishing', 'BEDROOMS', 'BATHROOMS', 'TOWN', 'EPC_RATING'] as const
 
-/** Generic fetch for filter options: GET /api/listing/filter-options?field=X */
+/** Fields for main bar dropdowns (Price & Beds) - loaded on mount */
+const MAIN_BAR_OPTION_FIELDS = ['price', 'BEDROOMS'] as const
+
+/** Generic fetch for filter options: GET /api/listing/filter-options?field=X. responseData may be string[] or number[] (e.g. price). */
 async function fetchFilterOptions(field: string): Promise<string[]> {
   const res = await fetch(`/api/listing/filter-options?field=${encodeURIComponent(field)}`)
   if (!res.ok) return []
-  const data = (await res.json()) as { responseMessage?: { responseData?: string[] } }
+  const data = (await res.json()) as { responseMessage?: { responseData?: unknown } }
   const arr = data?.responseMessage?.responseData
-  return Array.isArray(arr) ? arr : []
+  if (!Array.isArray(arr)) return []
+  return arr.map((x) => (typeof x === 'number' ? String(x) : String(x ?? '')))
 }
 
 /** Single listing item from POST /api/listing/v1.0/view response */
@@ -43,6 +56,8 @@ export interface ViewListingItem {
   status?: string | null
   imageUrl?: string | null
   thumbnailUrl?: string | null
+  mediaUrls?: string[] | null
+  profileImage?: string | null
   properties?: string | null
   features?: {
     garden?: boolean
@@ -65,6 +80,7 @@ interface ViewListingApiResponse {
 export interface MappedListing {
   id: unknown
   image: string
+  landlordImage?: string
   title: string
   location: string
   price: string
@@ -103,6 +119,24 @@ function propertyDetailHref(item: ViewListingItem): string {
   return `/property-to-rent/${locationSlug}/${slug}/${id}`
 }
 
+function normaliseImagePath(raw?: string | null): string {
+  if (!raw) return ''
+  const trimmed = raw.trim()
+  if (!trimmed) return ''
+  const idx = trimmed.indexOf('/images/')
+  if (idx >= 0) {
+    // Backend returns filesystem path like /var/www/rentsetu/images/1.jpg; expose as /images/1.jpg
+    return trimmed.slice(idx)
+  }
+  return trimmed
+}
+
+function getMockPropertyImage(index: number): string {
+  if (!MOCK_PROPERTY_IMAGES.length) return ''
+  const i = index % MOCK_PROPERTY_IMAGES.length
+  return MOCK_PROPERTY_IMAGES[i]
+}
+
 function mapListing(item: ViewListingItem, index: number): MappedListing {
   const num = typeof item.monthlyRent === 'number' ? item.monthlyRent : 0
   const price = num > 0 ? `₹${Number(num).toLocaleString('en-IN')}` : 'Price on request'
@@ -133,12 +167,15 @@ function mapListing(item: ViewListingItem, index: number): MappedListing {
   const href = propertyDetailHref(item)
   const status = item.status ?? undefined
 
-  const imageUrl = item.imageUrl ?? item.thumbnailUrl
-  const image = typeof imageUrl === 'string' && imageUrl.trim() ? imageUrl.trim() : ''
+  // For now, use static mock images for property photos (later can switch to mediaUrls)
+  const image = getMockPropertyImage(index)
+
+  const landlordImage = normaliseImagePath(item.profileImage ?? null)
 
   return {
     id,
     image,
+    landlordImage,
     title,
     location,
     price,
@@ -155,6 +192,10 @@ function mapListing(item: ViewListingItem, index: number): MappedListing {
 
 function parsePriceFilter(priceFilter: string): { minRent?: number; maxRent?: number } {
   if (!priceFilter || priceFilter === 'any') return {}
+  const num = Number(priceFilter)
+  if (!Number.isNaN(num) && num > 0) {
+    return { maxRent: num }
+  }
   const [a, b] = priceFilter.split('-').map(Number)
   const minRent = Number.isNaN(a) ? undefined : a
   const maxRent = b === 0 || Number.isNaN(b) ? undefined : b
@@ -164,7 +205,7 @@ function parsePriceFilter(priceFilter: string): { minRent?: number; maxRent?: nu
 function SearchResultsInner() {
   const searchParams = useSearchParams()
   const api = useApiClient()
-  const locationQuery = searchParams.get('q') ?? ''
+  const locationQuery = searchParams.get('term') ?? searchParams.get('q') ?? ''
   const [locationInput, setLocationInput] = useState(locationQuery)
   const [radius, setRadius] = useState(10)
   const [priceFilter, setPriceFilter] = useState<string>('any')
@@ -182,7 +223,11 @@ function SearchResultsInner() {
   const [townFilter, setTownFilter] = useState<string>('any')
   const [epcFilter, setEpcFilter] = useState<string>('any')
   const [filterOptions, setFilterOptions] = useState<Record<string, string[]>>({})
-  const loadMoreRef = useRef<HTMLDivElement>(null)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const loadMoreFnRef = useRef<() => void>(() => {})
+  const lastFetchIdRef = useRef(0)
+  const loadMoreInProgressRef = useRef(false)
 
   useEffect(() => {
     setLocationInput(locationQuery)
@@ -194,6 +239,12 @@ function SearchResultsInner() {
     setFilterOptions((prev) => ({ ...prev, [field]: options }))
   }, [])
 
+  // Load Price & Beds dropdown options from API on mount (same pattern as filter-options?field=BATHROOMS)
+  useEffect(() => {
+    MAIN_BAR_OPTION_FIELDS.forEach((f) => loadOptionsForField(f))
+  }, [loadOptionsForField])
+
+  // Load refine-panel filter options when panel is opened
   useEffect(() => {
     if (!moreFiltersOpen) return
     FILTER_OPTION_FIELDS.forEach((f) => {
@@ -202,13 +253,23 @@ function SearchResultsInner() {
   }, [moreFiltersOpen, filterOptions, loadOptionsForField])
 
   const fetchPage = useCallback(
-    async (startRow: number, endRow: number, append: boolean) => {
+    async (
+      startRow: number,
+      endRow: number,
+      append: boolean,
+      options?: { locationOverride?: string; fetchId?: number }
+    ) => {
       try {
         const { minRent, maxRent } = parsePriceFilter(priceFilter)
         const minBedrooms = bedsFilter && bedsFilter !== 'any' ? parseInt(bedsFilter, 10) : undefined
+        const locationTerm = (options?.locationOverride !== undefined
+          ? options.locationOverride
+          : locationInput
+        ).trim()
         const body: Record<string, unknown> = {
           startRow,
           endRow,
+          ...(locationTerm && { town: locationTerm }),
           ...(minRent != null && minRent > 0 && { minRent }),
           ...(maxRent != null && maxRent > 0 && { maxRent }),
           ...(minBedrooms != null && !Number.isNaN(minBedrooms) && minBedrooms > 0 && { minBedrooms }),
@@ -225,82 +286,109 @@ function SearchResultsInner() {
         )
         const raw = data?.responseMessage?.responseData?.properties
         const count = data?.responseMessage?.responseData?.totalCount ?? 0
-        if (append) {
-          setListings((prev) => (Array.isArray(raw) ? [...prev, ...(raw as ViewListingItem[])] : prev))
-        } else {
-          setListings(Array.isArray(raw) ? (raw as ViewListingItem[]) : [])
+        const isStale = options?.fetchId != null && options.fetchId !== lastFetchIdRef.current
+        if (!isStale) {
+          if (append) {
+            if (Array.isArray(raw) && raw.length > 0) {
+              setListings((prev) => [...prev, ...(raw as ViewListingItem[])])
+            }
+            // On append, only update totalCount when we have a positive value (avoid overwriting with 0 from bad range e.g. startRow:2 endRow:2)
+            if (count > 0) setTotalCount(count)
+          } else {
+            setListings(Array.isArray(raw) ? (raw as ViewListingItem[]) : [])
+            setTotalCount(count)
+          }
         }
-        setTotalCount(count)
         return { properties: raw, totalCount: count }
       } catch (err) {
-        if (!append) setError(err instanceof Error ? err.message : 'Failed to load listings')
+        if (options?.fetchId == null || options.fetchId === lastFetchIdRef.current) {
+          if (!append) setError(err instanceof Error ? err.message : 'Failed to load listings')
+        }
         return { properties: [], totalCount: 0 }
       }
     },
-    [api, priceFilter, bedsFilter, propertyTypeFilter, furnishingFilter, bathroomsFilter, townFilter, epcFilter]
+    [api, locationInput, priceFilter, bedsFilter, propertyTypeFilter, furnishingFilter, bathroomsFilter, townFilter, epcFilter]
   )
 
+  // Initial search when landing on /search?term=... — use URL term so the first request has correct location.
+  const fetchPageRef = useRef(fetchPage)
+  fetchPageRef.current = fetchPage
   useEffect(() => {
     let cancelled = false
+    const fetchId = ++lastFetchIdRef.current
+    loadMoreInProgressRef.current = false
     const run = async () => {
       setLoading(true)
       setError(null)
       setLoadingMore(false)
-      await fetchPage(1, PAGE_SIZE, false)
+      setListings([])
+      setTotalCount(0)
+      await fetchPageRef.current(1, PAGE_SIZE, false, {
+        locationOverride: locationQuery,
+        fetchId,
+      })
       if (!cancelled) setLoading(false)
     }
     run()
     return () => {
       cancelled = true
     }
-  }, [fetchPage])
+  }, [locationQuery])
 
   const loadMore = useCallback(async () => {
-    if (loadingMore || loading) return
-    if (listings.length >= totalCount) return
-    setLoadingMore(true)
+    if (loadMoreInProgressRef.current || loadingMore || loading) return
+    if (totalCount > 0 && listings.length >= totalCount) return
     const nextStart = listings.length + 1
-    const nextEnd = Math.min(listings.length + PAGE_SIZE, totalCount)
-    await fetchPage(nextStart, nextEnd, true)
-    setLoadingMore(false)
+    if (totalCount > 0 && nextStart > totalCount) return
+    const nextEnd = nextStart + PAGE_SIZE - 1
+    if (nextEnd < nextStart) return
+    loadMoreInProgressRef.current = true
+    setLoadingMore(true)
+    try {
+      await fetchPage(nextStart, nextEnd, true)
+    } finally {
+      loadMoreInProgressRef.current = false
+      setLoadingMore(false)
+    }
   }, [fetchPage, listings.length, loadingMore, loading, totalCount])
 
-  useEffect(() => {
-    const el = loadMoreRef.current
+  loadMoreFnRef.current = loadMore
+
+  const setSentinelRef = useCallback((el: HTMLDivElement | null) => {
+    if (sentinelRef.current === el) return
+    if (observerRef.current) {
+      observerRef.current.disconnect()
+      observerRef.current = null
+    }
+    sentinelRef.current = el
     if (!el) return
-    const observer = new IntersectionObserver(
+    observerRef.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && listings.length < totalCount && !loadingMore && !loading) {
-          loadMore()
-        }
+        if (!entries[0]?.isIntersecting) return
+        loadMoreFnRef.current()
       },
       { rootMargin: '200px', threshold: 0.1 }
     )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [listings.length, totalCount, loadingMore, loading, loadMore])
+    observerRef.current.observe(el)
+  }, [])
 
   const mapped = useMemo(
     () => listings.map((item, i) => mapListing(item, i)),
     [listings]
   )
 
-  const filtered = useMemo(() => {
-    let result = mapped
-    const loc = locationInput.trim().toLowerCase()
-    if (loc) {
-      result = result.filter(
-        (l) =>
-          l.title.toLowerCase().includes(loc) ||
-          l.location.toLowerCase().includes(loc)
-      )
-    }
-    return result
-  }, [mapped, locationInput])
-
   const pageTitle = locationInput.trim()
     ? `Properties to rent in ${locationInput.trim()}`
     : 'Properties to rent'
+
+  const runSearch = useCallback(() => {
+    loadMoreInProgressRef.current = false
+    setLoading(true)
+    setError(null)
+    setListings([])
+    setTotalCount(0)
+    fetchPage(1, PAGE_SIZE, false).finally(() => setLoading(false))
+  }, [fetchPage])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -310,117 +398,107 @@ function SearchResultsInner() {
             {pageTitle}
           </h1>
 
-          {/* Search & filters row */}
-          <div className="flex flex-col lg:flex-row gap-4 lg:items-end">
-            <div className="flex flex-wrap items-end gap-3 flex-1">
-              <div className="min-w-[200px] flex-1">
+          {/* Single search bar: Location + Price + Beds + one Search */}
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-[180px] flex-1 max-w-md">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={locationInput}
-                    onChange={(e) => setLocationInput(e.target.value)}
-                    placeholder="e.g. Bangalore, Koramangala"
-                    className="w-full rounded-xl border border-gray-300 px-4 py-2.5 pr-9 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                  {locationInput && (
-                    <button
-                      type="button"
-                      onClick={() => setLocationInput('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      aria-label="Clear"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={locationInput}
+                      onChange={(e) => setLocationInput(e.target.value)}
+                      placeholder="e.g. Bangalore, Koramangala"
+                      className="w-full rounded-xl border border-gray-300 px-4 py-2.5 pr-9 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                    {locationInput && (
+                      <button
+                        type="button"
+                        onClick={() => setLocationInput('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        aria-label="Clear"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center rounded-xl border border-gray-200 bg-gray-100 overflow-hidden" title="Distance criteria not yet available">
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={radius}
+                      disabled
+                      readOnly
+                      className="w-14 px-2 py-2.5 text-center text-sm border-0 bg-transparent text-gray-500 cursor-not-allowed"
+                      aria-label="Radius in km (disabled)"
+                    />
+                    <span className="text-gray-400 text-sm pr-3">km</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-end gap-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Radius</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={radius}
-                    onChange={(e) => setRadius(parseInt(e.target.value, 10) || 10)}
-                    className="w-20 rounded-xl border border-gray-300 px-3 py-2.5 text-center focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
                 <select
-                  className="rounded-xl border border-gray-300 px-3 py-2.5 bg-white focus:ring-2 focus:ring-primary-500"
-                  aria-label="Radius unit"
+                  value={priceFilter}
+                  onChange={(e) => setPriceFilter(e.target.value)}
+                  className="rounded-xl border border-gray-300 px-3 py-2.5 bg-white min-w-[130px] focus:ring-2 focus:ring-primary-500"
                 >
-                  <option value="km">km</option>
+                  <option value="any">Any price</option>
+                  {(filterOptions['price'] ?? []).map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt === 'any' ? opt : `Up to ₹${Number(opt).toLocaleString('en-IN')}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Beds</label>
+                <select
+                  value={bedsFilter}
+                  onChange={(e) => setBedsFilter(e.target.value)}
+                  className="rounded-xl border border-gray-300 px-3 py-2.5 bg-white min-w-[120px] focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="any">Any</option>
+                  {(filterOptions['BEDROOMS'] ?? []).map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
                 </select>
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  setLoading(true)
-                  setError(null)
-                  fetchPage(1, PAGE_SIZE, false).finally(() => setLoading(false))
-                }}
-                className="rounded-xl bg-accent-green hover:bg-accent-green-hover text-white font-semibold px-5 py-2.5 flex items-center gap-2"
+                onClick={() => setMoreFiltersOpen((o) => !o)}
+                className={`rounded-xl border px-4 py-2.5 flex items-center gap-2 text-sm font-medium transition-colors ${
+                  moreFiltersOpen
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                {moreFiltersOpen ? 'Hide filters' : 'Filters'}
+              </button>
+              <button
+                type="button"
+                onClick={runSearch}
+                className="rounded-xl bg-accent-green hover:bg-accent-green-hover text-white font-semibold px-6 py-2.5 flex items-center gap-2 shrink-0"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 Search
               </button>
-              <div className="flex flex-wrap items-end gap-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                  <select
-                    value={priceFilter}
-                    onChange={(e) => setPriceFilter(e.target.value)}
-                    className="rounded-xl border border-gray-300 px-3 py-2.5 bg-white min-w-[120px] focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="any">Any price</option>
-                    <option value="0-15000">Under ₹15,000</option>
-                    <option value="15000-30000">₹15,000 - ₹30,000</option>
-                    <option value="30000-50000">₹30,000 - ₹50,000</option>
-                    <option value="50000-0">₹50,000+</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Beds</label>
-                  <select
-                    value={bedsFilter}
-                    onChange={(e) => setBedsFilter(e.target.value)}
-                    className="rounded-xl border border-gray-300 px-3 py-2.5 bg-white min-w-[140px] focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="any">Any</option>
-                    <option value="1">Studio / 1 bed</option>
-                    <option value="2">2+ beds</option>
-                    <option value="3">3+ beds</option>
-                    <option value="4">4+ beds</option>
-                  </select>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setMoreFiltersOpen((o) => !o)}
-                  className={`rounded-xl border-2 px-4 py-2.5 flex items-center gap-2 font-semibold transition-colors ${
-                    moreFiltersOpen
-                      ? 'border-primary-600 bg-primary-50 text-primary-700'
-                      : 'border-gray-300 text-primary-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                  </svg>
-                  More filters
-                </button>
-              </div>
             </div>
 
-            {/* More filters panel - OpenRent style, minimal & premium */}
+            {/* One expandable Filters panel (full width, below bar); no separate Apply – Search above applies all */}
             {moreFiltersOpen && (
-              <div className="mt-4 p-5 rounded-xl border border-gray-200 bg-gray-50/80">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Filters</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="rounded-xl border border-gray-200 bg-gray-50/70 p-4">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Refine search</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Property type</label>
                     <select
@@ -430,7 +508,7 @@ function SearchResultsInner() {
                     >
                       <option value="any">Any</option>
                       {(filterOptions['property_type'] ?? []).map((opt) => (
-                        <option key={opt} value={opt}>{opt.replace(/_/g, ' ')}</option>
+                        <option key={opt} value={opt}>{opt}</option>
                       ))}
                     </select>
                   </div>
@@ -443,7 +521,7 @@ function SearchResultsInner() {
                     >
                       <option value="any">Any</option>
                       {(filterOptions['furnishing'] ?? []).map((opt) => (
-                        <option key={opt} value={opt}>{FURNISHING_LABELS[opt] || opt.replace(/_/g, ' ')}</option>
+                        <option key={opt} value={opt}>{opt}</option>
                       ))}
                     </select>
                   </div>
@@ -486,32 +564,10 @@ function SearchResultsInner() {
                       ))}
                     </select>
                   </div>
-                  <div className="flex items-end">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLoading(true)
-                        setError(null)
-                        fetchPage(1, PAGE_SIZE, false).finally(() => setLoading(false))
-                      }}
-                      className="w-full rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 text-sm"
-                    >
-                      Apply filters
-                    </button>
-                  </div>
                 </div>
+                <p className="text-xs text-gray-500 mt-3">Click Search above to apply these filters.</p>
               </div>
             )}
-
-            {/* Map - Coming soon (non-clickable, not in filter section) */}
-            <div className="mt-4 flex items-center gap-2 text-gray-400 text-sm">
-              <span title="Coming soon" className="cursor-not-allowed inline-flex items-center gap-1.5">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                </svg>
-                Map — Coming soon
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -531,24 +587,32 @@ function SearchResultsInner() {
 
         {!loading && !error && (
           <>
-            {/* Results summary */}
+            {/* Results summary + Map (coming soon) */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-              <p className="text-gray-600">
-                {totalCount > 0 ? (
-                  <>
-                    Showing{' '}
-                    <span className="font-semibold text-gray-900">
-                      {filtered.length} of {totalCount}
-                    </span>{' '}
-                    properties
-                    {listings.length < totalCount && (
-                      <span className="text-gray-500 text-sm ml-1">(scroll for more)</span>
-                    )}
-                  </>
-                ) : (
-                  <span className="font-semibold text-gray-900">No properties found</span>
-                )}
-              </p>
+              <div className="flex flex-wrap items-center gap-4">
+                <p className="text-gray-600">
+                  {mapped.length > 0 ? (
+                    <>
+                      Showing{' '}
+                      <span className="font-semibold text-gray-900">
+                        {mapped.length} of {totalCount > 0 ? totalCount : mapped.length}
+                      </span>{' '}
+                      properties
+                      {totalCount > 0 && listings.length < totalCount && (
+                        <span className="text-gray-500 text-sm ml-1">(scroll for more)</span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="font-semibold text-gray-900">No properties found</span>
+                  )}
+                </p>
+                <span title="Coming soon" className="text-gray-400 text-sm inline-flex items-center gap-1.5 cursor-not-allowed">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                  Map — Coming soon
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={() => setAlertsModalOpen(true)}
@@ -572,18 +636,19 @@ function SearchResultsInner() {
               }}
             />
 
-            {filtered.length === 0 ? (
+            {mapped.length === 0 ? (
               <div className="text-center py-20 text-gray-600 bg-white rounded-2xl border border-gray-200">
                 <p className="text-lg font-medium">No properties found.</p>
                 <p className="text-sm mt-1">Try adjusting your location or filters.</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {filtered.map((listing, i) => (
+                {mapped.map((listing, i) => (
                   <SearchListingRow
                     key={listing.id != null ? String(listing.id) : `listing-${i}`}
                     href={listing.href}
                     image={listing.image}
+                    landlordImage={listing.landlordImage}
                     title={listing.title}
                     location={listing.location}
                     price={listing.price}
@@ -596,9 +661,9 @@ function SearchResultsInner() {
                     status={listing.status}
                   />
                 ))}
-                {/* Sentinel for infinite scroll */}
-                {listings.length < totalCount && (
-                  <div ref={loadMoreRef} className="flex justify-center py-6">
+                {/* Sentinel for infinite scroll - only when we have a known total and more to load */}
+                {totalCount > 0 && listings.length < totalCount && (
+                  <div ref={setSentinelRef} className="flex justify-center py-6">
                     {loadingMore ? (
                       <span className="text-gray-500 text-sm">Loading more...</span>
                     ) : (

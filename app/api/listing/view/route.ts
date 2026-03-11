@@ -8,8 +8,9 @@ const LISTING_VIEW_URL = process.env.NEXT_PUBLIC_API_URL
  * Proxy for POST /api/listing/view — forwards to external API server-side to avoid CORS.
  * Body is forwarded as-is. Backend accepts:
  * - {} or { startRow, endRow } for list view
+ * - { location: string } for location/term filter (from search bar or ?term=)
  * - { id: number } for single property (no startRow/endRow)
- * - { startRow, endRow, id } with id optional for single record
+ * - filters: minRent, maxRent, minBedrooms, propertyType, furnishing, town, epcRating, etc.
  */
 export async function POST(request: NextRequest) {
   if (!LISTING_VIEW_URL) {
