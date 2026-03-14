@@ -13,9 +13,10 @@ export const apis = {
 
   // Packages / pricing (existing packages API may already exist)
   packages: `${BASE}/api/v1.0/packages`,
+  /** Next.js proxy route → backend getServiceById; call with baseURL: '' */
+  getServiceById: '/api/service/getServiceById',
   // Add more package/service endpoints when you have paths:
   // propertyAdvertising: `${BASE}/...`,
-  // tenantReferencing: `${BASE}/...`,
   // gasSafety: `${BASE}/...`,
   // epc: `${BASE}/...`,
   // electricalSafety: `${BASE}/...`,
